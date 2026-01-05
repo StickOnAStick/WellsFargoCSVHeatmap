@@ -1,1 +1,1 @@
-Parses your wells fargo CSV statement
+Parses your bank statements and detects recurring signals.
