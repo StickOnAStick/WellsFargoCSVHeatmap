@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+
+    <body class="bg-neutral-950 text-neutral-200 p-6">
+        <select id="year-select"
+            class="mb-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm">
+        </select>
+
+
+        <h1 class="text-xl font-semibold mb-4">Cashflow Calendar</h1>
+
+        <!-- Month labels -->
+        <div id="month-labels" class="grid grid-flow-col auto-cols-fr mb-2 text-xs text-neutral-400"></div>
+
+        <!-- Calendar grid -->
+        <div class="flex">
+            <!-- Day labels -->
+            <div class="flex flex-col gap-2 mr-2 text-xs text-neutral-400">
+            <div>Mon</div>
+            <div>Wed</div>
+            <div>Fri</div>
+            </div>
+
+            <div
+            id="calendar"
+            class="grid grid-rows-7 grid-flow-col gap-1"
+            ></div>
+        </div>
+
+        <!-- Day detail panel -->
+        <div id="day-panel"
+            class="mt-6 hidden border border-neutral-800 rounded p-4 bg-neutral-900">
+        </div>
+
+        <script src="calendar.js"></script>
+    </body>
+</html>
