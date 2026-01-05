@@ -1,14 +1,9 @@
 from .statements import AbstractStatement, AbstractStatements
-from .parsers import AbstractStatementParser
+from ..parsers.parsers import AbstractStatementParser
 from collections import defaultdict
-from typing import Callable
 from pathlib import Path
 import datetime
-import re
 import csv
-
-
-
 
 class WellsStatement(AbstractStatement):
     def __init__(self, date: datetime.date, amount: float, desc: str):

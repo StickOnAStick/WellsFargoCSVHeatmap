@@ -1,4 +1,4 @@
-from .statements import AbstractStatement
+from ..statements.statements import AbstractStatement
 from collections import defaultdict
 import statistics
 import math
@@ -57,6 +57,7 @@ def recurrence_score(statements: list[AbstractStatement]) -> float:
 
 def is_recurring(statements: list[AbstractStatement], threshold: float=0.75) -> bool:
     return recurrence_score(statements=statements) >= threshold
+
 
 def aggregate_daily(
     statements: list[AbstractStatement]

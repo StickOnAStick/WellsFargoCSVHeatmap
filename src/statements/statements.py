@@ -2,7 +2,6 @@ from collections import defaultdict
 from abc import ABC, abstractmethod
 import datetime
 from typing import Callable
-from pathlib import Path
 import re
 
 
@@ -98,19 +97,4 @@ class AbstractStatements(ABC):
         
         return signals
 
-    def aggregate_daily(
-        statements: list[AbstractStatement]
-    ) -> list[AbstractStatement]:
-        
-        totals = defaultdict(float)
-
-        for s in statements:
-            totals[s.get_date()] += s.get_amount()
-        
-        aggregated = []
-        for date, amount in totals.items():
-            aggregated.append(
-                type(statements[0])(date=date, amount=amount, desc=statements[0].get_desc())
-            )
-        
-        return aggregated
+  
