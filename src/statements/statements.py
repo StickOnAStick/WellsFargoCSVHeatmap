@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import datetime
 from typing import Callable
 from pathlib import Path
+import re
+
 
 class AbstractStatement(ABC):
 
@@ -26,6 +28,8 @@ class AbstractStatement(ABC):
     def __repr__(self):
         return f"AbstractStatement(date={self._date}, amount={self._amount}, desc={self._desc})"
 
+Predicate = Callable[[AbstractStatement], bool]
+SignalDetector = Callable[[list[AbstractStatement]], bool]
 
 class AbstractStatements(ABC):
 
@@ -33,12 +37,6 @@ class AbstractStatements(ABC):
         self._statements:       dict[datetime.date, list[AbstractStatement]] = statements
         self._withdrawls_view:  dict[datetime.date, list[AbstractStatement]] = self._create_view(self._withdrawl_filter)
         self._deposits_view:    dict[datetime.date, list[AbstractStatement]] = self._create_view(self._deposit_filter)
-
-        self._discovered_withdrawl_signals: dict[str, list[AbstractStatement]] = defaultdict(list)
-        self._discovered_deposit_signals:   dict[str, list[AbstractStatement]] = defaultdict(list)
-
-        self._average_monthly_expendature:  dict[datetime.date, float] = defaultdict(float)
-        self._average_monthly_deposits:     dict[datetime.date, float] = defaultdict(float)
 
     @abstractmethod
     def _withdrawl_filter(statement: AbstractStatement) -> bool:
@@ -53,7 +51,6 @@ class AbstractStatements(ABC):
             predicate: Callable[[AbstractStatement], bool]
     ) -> dict[datetime.date, list[AbstractStatement]]:
         view = defaultdict(list)
-
         for day, statements in self._statements.items():
             for statement in statements:
                 if predicate(statement):
@@ -70,11 +67,50 @@ class AbstractStatements(ABC):
     def get_deposits_view(self) -> dict[datetime.date, list[AbstractStatement]]:
         return self._deposits_view
      
-   
+    @staticmethod
+    def _normalize_desc(s: str) -> str:
+        s = s.upper()
+        s = re.sub(r"\d+", "", s)
+        s = re.sub(r"\s+", " ", s)
+        return s.strip()
 
-    @abstractmethod
-    def _discover_signals(self, comparator: Callable[[any], bool], label: str) -> dict[str, list[AbstractStatement]]:
-        pass
+    def discover_candidates(
+            self,
+            predicate: Predicate
+    ) -> dict[str, list[AbstractStatement]]:
+        candidates = defaultdict(list)
+        for _, statements in self._statements.items():
+            for statement in statements:
+                if predicate(statement):
+                    key = self._normalize_desc(statement.get_desc())
+                    candidates[key].append(statement)
+        return candidates
 
-    
+    def discover_signals(
+        self,
+        candidates: dict[str, list[AbstractStatement]],
+        detector: SignalDetector
+    ) -> dict[str, list[AbstractStatement]]:
+        signals = {}
+        for key, statements in candidates.items():
+            if detector(statements):
+                signals[key] = statements
+        
+        return signals
 
+    def aggregate_daily(
+        statements: list[AbstractStatement]
+    ) -> list[AbstractStatement]:
+        
+        totals = defaultdict(float)
+
+        for s in statements:
+            totals[s.get_date()] += s.get_amount()
+        
+        aggregated = []
+        for date, amount in totals.items():
+            aggregated.append(
+                type(statements[0])(date=date, amount=amount, desc=statements[0].get_desc())
+            )
+        
+        return aggregated

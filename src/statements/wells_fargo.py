@@ -78,27 +78,3 @@ class WellsFargoStatements(AbstractStatements):
 
     def _deposit_filter(self, statement: WellsStatement) -> bool:
         return statement._amount >= 0.0
-
-    def _create_view(self, comparator: Callable[[AbstractStatement], bool]):
-        view: dict[datetime.date, list[AbstractStatement]] = defaultdict(list)
-        for day, statements in self._statements.items():
-            for statement in statements:
-                if comparator(statement):
-                    view[day].append(statement)
-        return view
-
-    def _discover_signals(self, comparator: Callable[[AbstractStatement], bool]):
-        signals = defaultdict(list)
-        for day, statements in self._statements.items():
-            for statement in statements:
-                if comparator(statement):
-                    key = self._normalize_desc(statement._desc)
-                    signals[key].append(statement)
-        return signals
-
-    @staticmethod
-    def _normalize_desc(s: str) -> str:
-        s = s.upper()
-        s = re.sub(r"\d+", "", s)
-        s = re.sub(r"\s+", " ", s)
-        return s.strip()
