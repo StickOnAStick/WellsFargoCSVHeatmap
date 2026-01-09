@@ -2,7 +2,7 @@ from src.analysis.recurrence import is_recurring, recurrence_score, aggregate_da
 from src.statements.wells_fargo import WellsFargoStatements
 import src.api.api as API
 
-FILE_PATH = "data/Wells/Checking2.csv"
+FILE_PATH = "data/a.csv"
 JSON_OUTPUT_FILE = "frontend/calendar.json"
 
 def main():
