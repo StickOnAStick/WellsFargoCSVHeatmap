@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from src.statements.statements import AbstractStatement, AbstractStatements
 from collections import defaultdict
-import datetime
+import datetime, calendar
 
 class FrontendStatementView(BaseModel):
     date:           datetime.date
@@ -36,15 +36,19 @@ def infer_analysis_end_date(stmts: AbstractStatements) -> datetime.date:
 
 def amoritize_signal_to_daily_map(
     signal_statements: list[AbstractStatement],
-    end_date: datetime.date
+    end_date: datetime.date,
+    forward_weekends: bool
 ) -> dict[datetime.date, float]:
     """
         Given statements for ONE recurring signal
         return date -> amortized daily contribution
+
+        forward_weekends: bool - Forwards weekend amortorized payments to monday.
+                              Useful for banks that only post statements on weekdays.
     """
 
     # Aggregate amounts per day
-    by_day = defaultdict(float)
+    by_day: dict[datetime.date, float] = defaultdict(float)
     for s in signal_statements:
         by_day[s.get_date()] += s.get_amount()
 
@@ -68,6 +72,13 @@ def amoritize_signal_to_daily_map(
 
         d = start
         while d < end:
+            if forward_weekends and d.weekday() >= calendar.SATURDAY:
+                days_to_monday = 7 - d.weekday()
+                target = d + datetime.timedelta(days=days_to_monday)
+                daily[target] += daily_rate
+                d += datetime.timedelta(days=1)
+                continue
+
             daily[d] += daily_rate
             d += datetime.timedelta(days=1)
 
@@ -80,6 +91,13 @@ def amoritize_signal_to_daily_map(
         rate = total / span
         d = last
         while d <= end_date:
+            if forward_weekends and d.weekday() >= calendar.SATURDAY:
+                days_to_monday = 7 - d.weekday()
+                target = d + datetime.timedelta(days=days_to_monday)
+                daily[target] += rate
+                d += datetime.timedelta(days=1)
+                continue
+
             daily[d] += rate
             d += datetime.timedelta(days=1)
 
@@ -104,7 +122,8 @@ def build_calendar_from_statements(
     for desc, signal_stmts in recurring_signals.items():
         daily_map = amoritize_signal_to_daily_map(
             signal_stmts,
-            end_date=infer_analysis_end_date(stmts=stmts)
+            end_date=infer_analysis_end_date(stmts=stmts),
+            forward_weekends=True
         )
         for day, amt in daily_map.items():
 

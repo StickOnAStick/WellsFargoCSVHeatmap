@@ -1,25 +1,33 @@
 from ..statements.statements import AbstractStatement
 from collections import defaultdict
+import datetime
 import statistics
 import math
 
-def recurrence_score(statements: list[AbstractStatement]) -> float:
+
+WEEKLY = 7
+BIWEEKLY = 14
+MONTHLY = 30
+
+_default_cadences: list[int] = [WEEKLY, BIWEEKLY, MONTHLY]
+
+def recurrence_score(
+    statements: list[AbstractStatement],
+    cadence_list: list[int] = _default_cadences, 
+    
+    min_sample_count: int = 4,
+
+    CADENCE_TOLERANCE: float = 4.0, # days
+    CADENCE_DELTA_TOLERANCE: float = 12.0, # Scales quadratically exp(-v/10)
+    AMT_VARIANCE_TOLERANCE: float = 0.12,
+    
+    CADENCE_WEIGHT: float = 0.3,
+    COUNT_WEIGHT: float = 0.3,
+    AMOUNT_WEIGHT: float = 0.4,
+) -> float:
         
     if len(statements) < 3:
         return 0.0
-    
-    WEEKLY = 7
-    BIWEEKLY = 14
-    MONTHLY = 30
-
-    MIN_COUNT = 4
-    AMT_VARIANCE_TOLERANCE = 0.12
-    CADENCE_DELTA_TOLERANCE = 12 # Scales quadratically exp(-v/10)
-    CADENCE_TOLERANCE = 4 # days
-
-    CADENCE_WEIGHT = 0.3
-    AMOUNT_WEIGHT = 0.3
-    COUNT_WEIGHT = 0.4
 
     # --- sort by date ---
     statements = sorted(statements, key=lambda s: s.get_date())
@@ -32,9 +40,7 @@ def recurrence_score(statements: list[AbstractStatement]) -> float:
     delta_variance = statistics.pvariance(deltas)
 
     # expected candences (days)
-    expected = [WEEKLY, BIWEEKLY, MONTHLY]
-
-    cadence_error = min(abs(median_delta - e) for e in expected)
+    cadence_error = min(abs(median_delta - e) for e in cadence_list)
     cadence_score = math.exp(-cadence_error / CADENCE_TOLERANCE) * math.exp(-delta_variance / CADENCE_DELTA_TOLERANCE)
 
     # ---- Amount stability score ----
@@ -47,7 +53,7 @@ def recurrence_score(statements: list[AbstractStatement]) -> float:
     amount_score = math.exp(-cv / AMT_VARIANCE_TOLERANCE)
 
     # count confidence
-    count_score = min(len(statements) / MIN_COUNT, 1.0)
+    count_score = min(len(statements) / min_sample_count, 1.0)
 
     return (
         CADENCE_WEIGHT * cadence_score +
