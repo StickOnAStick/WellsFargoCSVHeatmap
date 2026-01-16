@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from src.statements.statements import AbstractStatement, AbstractStatements
 from collections import defaultdict
+from src.analysis.recurrence import is_recurring, recurrence_score
 import datetime, calendar
 
 class FrontendStatementView(BaseModel):
@@ -17,6 +18,61 @@ class FrontendCalendarDayView(BaseModel):
 
 class FrontendCalendarView(BaseModel):
     days: dict[datetime.date, FrontendCalendarDayView]
+
+class FrontendFrequentTransaction(BaseModel):
+    recurrence_score: float
+    statements: list[FrontendStatementView]
+
+class FrontendFrequentTransactionsView(BaseModel):
+    withdrawls: list[FrontendFrequentTransaction]
+    deposits:   list[FrontendFrequentTransaction]
+
+
+def build_frequent_transactions(
+    stmts: AbstractStatements,
+    frequent_threshold: float = 0.25,
+) -> FrontendFrequentTransactionsView:
+    
+    withdrawl_candidates = stmts.discover_candidates(stmts._withdrawl_filter)
+    deposit_candidates = stmts.discover_candidates(stmts._deposit_filter)
+
+
+    withdrawl_frequent_signals = stmts.discover_signals(
+        withdrawl_candidates,
+        lambda statements: is_recurring(withdrawl_candidates, frequent_threshold)
+    )
+    deposit_frequent_signals = stmts.discover_signals(
+        withdrawl_candidates,
+        lambda statements: is_recurring(deposit_candidates, frequent_threshold)
+    )
+
+    
+    withdrawl_scored = {
+        k: recurrence_score(v) for k, v in withdrawl_frequent_signals.items()
+    }
+    deposits_scored = {
+        k: recurrence_score(v) for k, v in deposit_frequent_signals.items()
+    }
+
+
+
+
+    pass
+
+def build_frequent_transactions(
+    stmts: list[AbstractStatement]
+) -> FrontendFrequentTransaction:
+    
+    recurrence_score: float = recurrence_score(stmts)
+
+    return FrontendFrequentTransaction(
+        statements=stmts,
+        recurrence_score=recurrence_score
+    )
+
+def order_by_recurrence(
+    trans: list[FrontendFrequentTransaction]
+) -> 
 
 
 def make_amortized_frontend_statement(
